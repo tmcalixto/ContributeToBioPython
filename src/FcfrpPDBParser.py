@@ -1,8 +1,6 @@
 #from Bio.PDB.StructureBuilder import StructureBuilder
 import os
 from FcfrpStructureBuilder import FcfrpStructureBuilder
-from FcfrpDatabase import FcfrpDatabase
-from FcfrpPDBDatabase import FcfrpPDBDatabase
 from FcfrpFile import FcfrpFile
 from FcfrpSeqRes import FcfrpSeqRes
 from FcfrpResidue import FcfrpResidue
@@ -103,22 +101,7 @@ class PDBFileLayout:
         sym2       = strLine[66:72]
         sym2       = strLine[66:72]
         length     = strLine[73:78]
-        
-        # print 'campo ' + campo
-        # print 'sernum ' + sernum
-        # print 'resi1 ' + resi1 
-        # print 'chainid1 ' + chainid1 
-        # print 'seqnum1 ' + seqnum1 
-        # print 'icode1 ' + icode1 
-        # print 'resi2 ' + resi2 
-        # print 'chainid2 ' + chainid2 
-        # print 'seqnum2 ' + seqnum2
-        # print 'icode2 ' +  icode2
-        # print 'sym1 ' +  sym1
-        # print 'sym2 ' +  sym2
-        # print 'length ' +  length
-        # print '\n\n'        
-        
+                
         ssbond = FcfrpSSBonds()
         ssbond.setSerNum(sernum)
         ssbond.setChainId1(chainid1)
@@ -169,107 +152,16 @@ class PDBFileLayout:
                           
 class FcfrpPDBParser():
     
-    def __init__(self, PERMISSIVE=1, get_header=0, fcfrpDatabase=None, LayoutDatabase=False):
+    def __init__(self, PERMISSIVE=1, get_header=0, LayoutDatabase=False):
         self._PERMISSIVE = PERMISSIVE
         #If LayoutDatabase, I'll load the classes about database. Otherwise, I'll not load them.
-        if LayoutDatabase == True:
-            if fcfrpDatabase == None:
-                self._fcfrpDatabase = FcfrpDatabase()
-            else:
-                self._fcfrpDatabase = fcfrpDatabase
-            self._pdbDatabase = FcfrpPDBDatabase()
-        else:
-            self._pdbFileLayout = PDBFileLayout()
-            self._dicResidue = {} 
-            self._dicSeqRes = {}
+        self._pdbFileLayout = PDBFileLayout()
+        self._dicResidue = {} 
+        self._dicSeqRes = {}
                 
         #self._structure_builder=StructureBuilder()
         self._structure_builder = FcfrpStructureBuilder()        
         
-    def _loadAtomsfromDatabase(self, idcode, modelChoose, chainId = None):
-        #Load the Dictionaries
-        D_Atoms = self._pdbDatabase.readAtomsPDBFromResult(self._fcfrpDatabase.getAtomsPDB(idcode, modelChoose, chainId))
-        i_a = 0 #atom index
-        #Create reference variables
-        reference_segid = None
-        reference_chain = None
-        reference_residue = None
-        reference_resName = None
-        reference_model = None
-        inserted_model0 = False
-        
-        while (i_a < len(D_Atoms)):
-            resname = str(self._fcfrpDatabase.getFullInformationAminoacid(D_Atoms[i_a].getIdAmino())[3])
-            resseq = D_Atoms[i_a].getResSeq()
-            icode = D_Atoms[i_a].getIcode()
-            residueId = ("", resseq, icode)    
-            #Model
-            if reference_model != D_Atoms[i_a].getModel() or D_Atoms[i_a].getModel() == None:
-                if D_Atoms[i_a].getModel() == None: #Cristalografy
-                    reference_model = 0
-                    if inserted_model0 == False: 
-                        self._structure_builder.init_model(reference_model)
-                    inserted_model0 = True    
-                else:    
-                    reference_model = D_Atoms[i_a].getModel()
-                    self._structure_builder.init_model(reference_model)
-                    reference_chain = None
-                    reference_residue = None
-                    reference_resName = None
-            #Segid
-            #if reference_segid != dicAtom[i_a].getSeqId():
-            #    reference_segid = dicAtom[i_a].getSeqId()
-            self._structure_builder.init_seg("")
-            reference_segid = i_a
-            #Chain and Residue
-            if reference_chain != D_Atoms[i_a].getChainId():
-                reference_chain = D_Atoms[i_a].getChainId()
-                self._structure_builder.init_chain(reference_chain)
-                #Because changed chain, it's necessary start a new residue in structure
-                reference_residue = residueId
-                reference_resName = resname
-                self._structure_builder.init_residue(resname, "", resseq, icode)
-            elif reference_resName != resname or reference_residue != residueId:
-                reference_resName = resname
-                reference_residue = residueId
-                self._structure_builder.init_residue(resname, "", resseq, icode)
-            #Atom
-            #print (dicAtom[i_a].get_id(), dicAtom[i_a].get_coord(),  dicAtom[i_a].get_fullname(), dicAtom[i_a].get_serial_number(),dicAtom[i_a].getChainId(),resname,resseq)    
-            self._structure_builder.init_atom(D_Atoms[i_a].get_id(), D_Atoms[i_a].get_coord(), D_Atoms[i_a].get_bfactor(), D_Atoms[i_a].get_occupancy() , D_Atoms[i_a].get_altloc(), D_Atoms[i_a].get_fullname(), D_Atoms[i_a].get_serial_number())            
-            #self._structure_builder.init_atom(D_Atoms[i_a].get_id(), reference_model, reference_resName, D_Atoms[i_a].get_coord()[0], D_Atoms[i_a].get_coord()[1], D_Atoms[i_a].get_coord()[2], D_Atoms[i_a].get_bfactor(), D_Atoms[i_a].get_occupancy() , D_Atoms[i_a].get_altloc(), D_Atoms[i_a].get_fullname(), D_Atoms[i_a].get_serial_number(), reference_residue, resseq, reference_chain, reference_segid, reference_resName )
-            i_a = i_a + 1
-    
-    def _loadSeqResfromDatabase(self, idcode, id, chainId = None):
-        dicResidue = self._pdbDatabase.readResiduesFromResult(self._fcfrpDatabase.getResidues(idcode))
-        dicSeqRes = self._pdbDatabase.readSeqResFromResult(self._fcfrpDatabase.getSeqRes(idcode,chainId))
-        self._structure_builder.init_SeqRes(id)
-        self._structure_builder.structure.add_SeqRes(dicSeqRes, dicResidue)
-    
-    def _loadSSBondsfromDatabase(self,idcode,id, chainId):
-        dicSSBonds = self._pdbDatabase.readSSBondsPDBFromResult(self._fcfrpDatabase.getSSBonds(idcode, chainId)) 
-        self._structure_builder.init_SSBonds(id)
-        self._structure_builder.structure.add_SSBonds(dicSSBonds)
-    
-    def _loadErrorsFromDatabase(self,id):
-        dicErrors = self._pdbDatabase.readPDBErrorsFromResult(self._fcfrpDatabase.getPDBErrors(id))
-        self._structure_builder.init_ErrorStructure(id)
-        self._structure_builder.structure.add_StructureErrors(dicErrors)
-        
-    def loadStructureFromDatabase(self, id, modelChoose=None,chainId=None):
-        #Give an id, load of Structure from Database
-        #if the Structure is a NRM, it's necessary inform its model which want to get
-        idcode = self._fcfrpDatabase.getIdCode(id)
-        #Start the Structure
-        self._structure_builder.init_structure(id)
-        #SeqRes
-        self._loadSeqResfromDatabase(idcode, id, chainId)
-        #SSbonds
-        self._loadSSBondsfromDatabase(idcode, id, chainId)
-        #Atoms
-        self._loadAtomsfromDatabase(idcode, modelChoose, chainId)
-        #Errors
-        self._loadErrorsFromDatabase(id)
-        return self._structure_builder.get_structure()
     
     def _loadAtomsfromFile(self, id, dicAtom):
         i_a = 0 #atom index

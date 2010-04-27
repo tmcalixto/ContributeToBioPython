@@ -1,8 +1,8 @@
 import urllib
+import os
+
 from Bio import File
 from FcfrpFile import FcfrpFile
-from FcfrpDatabase import FcfrpDatabase
-import os
 from Bio.PDB.PDBParser import PDBParser
 from FcfrpPDBParser import FcfrpPDBParser
 from FcfrpConfig import FcfrpConfig
@@ -83,14 +83,15 @@ def isPDBFile(pathFileName):
         raise Exception(mensage)
 
         
-def getStructure(id,modelChoose=None,path):
+def getStructure(id,path, modelChoose=None):
     # This function returns a Structure that will be from PDB file.
     # If there isn't PDB file, it will be obtained from PDB site
 
+    pdbid = str(id) + ".PDB" 
     F = FcfrpFile(path,pdbid)
     if not F.existsFile():
         pdbFile = getPDBFromSite(id)
-    savePDBFile(pdbFile, F._path)
+        savePDBFile(pdbFile, F._path)
     isPDBFile(F._path)        
     errors, vs = checkPDBFile(id, F.getPath())
     if len(errors) == 0:

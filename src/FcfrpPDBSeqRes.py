@@ -1,6 +1,5 @@
 from Bio.PDB.Entity import Entity
 from FcfrpSeqRes import FcfrpSeqRes
-from FcfrpFasta import FastaChainSequence
     
 #This class works with SEQRES and Residue objects. Because these objects are divide in Database.
 # So, this class join them and it'll store in dictionary.  
