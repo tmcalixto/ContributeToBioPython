@@ -16,3 +16,4 @@ def main():
                     print atom.get_name(), atom.get_coord()
 
 main()
+
